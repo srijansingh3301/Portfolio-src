@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="system">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hey, there!</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="site-header">
+    <button class="avatar-btn" id="homeBtn" aria-label="Home" title="Home">
+      <img src="https://cdn.discordapp.com/avatars/1398613481028190320/807c8e594160b427cb0394e106fbf6cc.png?size=1024" alt="Avatar">
+    </button>
+    <nav>
+      <button id="thoughtsBtn">Thoughts</button>
+      <button id="photosBtn">Photos</button>
+      <button class="theme-btn" id="themeBtn" aria-label="Toggle theme" title="Theme: system"></button>
+    </nav>
+  </header>
+
+  <main id="content"></main>
+
+  <footer class="site-footer">
+    <span>&copy; 2026 hiro</span>
+    <div class="footer-links">
+      <a href="mailto:hiro@sboosts.com">Email</a>
+      <a href="https://github.com/hiroo1337" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  var content = document.getElementById('content');
+  var homeBtn = document.getElementById('homeBtn');
+  var thoughtsBtn = document.getElementById('thoughtsBtn');
+  var photosBtn = document.getElementById('photosBtn');
+
+  var homeHTML = '<div class="page">' +
+    '<h1>Hey, there!</h1>' +
+    '<p class="tagline">Computer science student and software developer.</p>' +
+    '<div class="location">' +
+      '<svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' +
+      '<span>India</span>' +
+    '</div>' +
+    '<p>I help run <strong>SBoosts</strong>, where we build tools and infrastructure for delivering digital products to customers around the world. Most days that means working on payment systems, automation, reliability, and fixing whatever decides to break.</p>' +
+    '<p>I mostly write <span class="u">Python</span> and <span class="u">JavaScript</span>, and I\'ve been building things on the internet for a few years now. Somewhere along the way it stopped being just a hobby.</p>' +
+    '<p>When I\'m away from the keyboard I\'m usually at the gym, traveling somewhere new, or spending way too much time playing story games.</p>' +
+    '</div>';
+
+  function setActive(btn) {
+    thoughtsBtn.classList.remove('active');
+    photosBtn.classList.remove('active');
+    if (btn) btn.classList.add('active');
+  }
+
+  function esc(s) {
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // Allow only safe formatting tags coming from the admin editor
+  var ALLOWED_TAGS = ['B','STRONG','I','EM','U','S','STRIKE','P','BR','DIV','H3','BLOCKQUOTE','UL','OL','LI','PRE','CODE','A'];
+  function sanitize(html) {
+    var doc = new DOMParser().parseFromString(html, 'text/html');
+    (function clean(node) {
+      var children = Array.prototype.slice.call(node.childNodes);
+      children.forEach(function (child) {
+        if (child.nodeType === 1) {
+          if (['SCRIPT','STYLE','IFRAME','OBJECT','EMBED'].indexOf(child.tagName) !== -1) {
+            node.removeChild(child);
+            return;
+          }
+          if (ALLOWED_TAGS.indexOf(child.tagName) === -1) {
+            // unwrap disallowed element, keep its children
+            while (child.firstChild) node.insertBefore(child.firstChild, child);
+            node.removeChild(child);
+            return;
+          }
+          // strip attributes, keeping only a safe href on links
+          var href = child.tagName === 'A' ? child.getAttribute('href') : null;
+          Array.prototype.slice.call(child.attributes).forEach(function (attr) {
+            child.removeAttribute(attr.name);
+          });
+          if (href && /^(https?:\/\/|mailto:)/i.test(href.trim())) {
+            child.setAttribute('href', href.trim());
+            child.setAttribute('target', '_blank');
+            child.setAttribute('rel', 'noopener noreferrer');
+          }
+          clean(child);
+        } else if (child.nodeType !== 3) {
+          node.removeChild(child);
+        }
+      });
+    })(doc.body);
+    return doc.body.innerHTML;
+  }
+
+  function showHome() {
+    setActive(null);
+    content.innerHTML = homeHTML;
+  }
+
+  function showThoughts() {
+    setActive(thoughtsBtn);
+    content.innerHTML = '<div class="page"><h2 class="page-title">Thoughts</h2><p class="empty">Loading…</p></div>';
+    fetch('/api/thoughts')
+      .then(function (r) { return r.json(); })
+      .then(function (items) {
+        var html = '<div class="page"><h2 class="page-title">Thoughts</h2>';
+        if (!items.length) {
+          html += '<p class="empty">Nothing here yet.</p>';
+        } else {
+          items.forEach(function (t) {
+            html += '<article class="thought">' +
+              '<h3>' + esc(t.title) + '</h3>' +
+              '<div class="date">' + esc(t.date) + '</div>' +
+              '<div class="body">' + sanitize(t.content) + '</div>' +
+              '</article>';
+          });
+        }
+        content.innerHTML = html + '</div>';
+      })
+      .catch(function () {
+        content.innerHTML = '<div class="page"><h2 class="page-title">Thoughts</h2><p class="empty">Couldn\'t load thoughts. Try refreshing.</p></div>';
+      });
+  }
+
+  function showPhotos() {
+    setActive(photosBtn);
+    content.innerHTML = '<div class="page"><h2 class="page-title">Photos</h2><p class="empty">Loading…</p></div>';
+    fetch('/api/photos')
+      .then(function (r) { return r.json(); })
+      .then(function (items) {
+        var html = '<div class="page"><h2 class="page-title">Photos</h2>';
+        if (!items.length) {
+          html += '<p class="empty">Nothing here yet.</p>';
+        } else {
+          html += '<div class="photo-grid">';
+          items.forEach(function (p) {
+            html += '<figure class="photo-card">' +
+              '<img src="' + p.url + '" alt="' + esc(p.caption || 'Photo') + '" loading="lazy">' +
+              (p.caption ? '<figcaption class="caption">' + esc(p.caption) + '</figcaption>' : '') +
+              '</figure>';
+          });
+          html += '</div>';
+        }
+        content.innerHTML = html + '</div>';
+      })
+      .catch(function () {
+        content.innerHTML = '<div class="page"><h2 class="page-title">Photos</h2><p class="empty">Couldn\'t load photos. Try refreshing.</p></div>';
+      });
+  }
+
+  homeBtn.addEventListener('click', showHome);
+  thoughtsBtn.addEventListener('click', showThoughts);
+  photosBtn.addEventListener('click', showPhotos);
+  showHome();
+
+  // Theme: system -> light -> dark -> system
+  var icons = {
+    system: '<svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+    light:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>',
+    dark:   '<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
+  };
+  var order = ['system', 'light', 'dark'];
+  var theme = 'system';
+  var themeBtn = document.getElementById('themeBtn');
+
+  function applyTheme() {
+    document.documentElement.setAttribute('data-theme', theme);
+    themeBtn.innerHTML = icons[theme];
+    themeBtn.title = 'Theme: ' + theme;
+    themeBtn.setAttribute('aria-label', 'Theme: ' + theme + ' (click to change)');
+  }
+  themeBtn.addEventListener('click', function () {
+    theme = order[(order.indexOf(theme) + 1) % order.length];
+    applyTheme();
+  });
+  applyTheme();
+</script>
+</body>
+</html>

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="system">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tabs button {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 15px;
+    padding: 8px 14px;
+    cursor: pointer;
+    margin-bottom: -1px;
+  }
+  .tabs button.active {
+    color: var(--text-strong);
+    border-bottom-color: var(--text-strong);
+  }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 32px;
+  }
+  .card h3 {
+    color: var(--text-strong);
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  .item-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .item-row:last-child { border-bottom: none; }
+  .item-row .meta { min-width: 0; flex: 1; }
+  .item-row .meta h4 {
+    color: var(--text-strong);
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .item-row .meta h4 .no-caption {
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  .item-row .meta .date {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+  .item-row .meta .preview {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    margin: 4px 0 0;
+  }
+
+  .photo-row-img {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+    background: var(--hover-bg);
+  }
+
+  input[type="file"] {
+    width: 100%;
+    font-size: 14px;
+    color: var(--text-muted);
+    padding: 10px 0;
+  }
+  input[type="file"]::file-selector-button {
+    background: var(--hover-bg);
+    color: var(--text-strong);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    margin-right: 12px;
+  }
+
+  /* Rich text editor */
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    padding: 6px;
+  }
+  .toolbar button {
+    background: none;
+    border: none;
+    border-radius: 6px;
+    color: var(--text-muted);
+    min-width: 34px;
+    height: 34px;
+    padding: 0 8px;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+  .toolbar button:hover {
+    background: var(--hover-bg);
+    color: var(--text-strong);
+  }
+  .toolbar .sep {
+    width: 1px;
+    background: var(--border);
+    margin: 4px;
+  }
+  .toolbar b { font-weight: 700; }
+  .toolbar i { font-style: italic; }
+  .toolbar u { text-decoration: underline; }
+  .toolbar s { text-decoration: line-through; }
+
+  .editor {
+    width: 100%;
+    min-height: 160px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 0 0 8px 8px;
+    color: var(--text-strong);
+    font: inherit;
+    font-size: 16px;
+    padding: 12px 14px;
+    overflow-y: auto;
+    transition: border-color 0.15s ease;
+  }
+  .editor:focus {
+    outline: none;
+    border-color: var(--text-muted);
+  }
+  .editor:empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+  .editor h3 {
+    color: var(--text-strong);
+    font-size: 1.15rem;
+    margin: 12px 0 6px;
+  }
+  .editor blockquote {
+    border-left: 3px solid var(--border);
+    padding-left: 14px;
+    color: var(--text-muted);
+    margin: 10px 0;
+  }
+  .editor ul,
+  .editor ol {
+    padding-left: 24px;
+    margin: 8px 0;
+  }
+  .editor pre,
+  .editor code {
+    background: var(--hover-bg);
+    border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9em;
+  }
+  .editor pre {
+    padding: 10px 14px;
+    margin: 10px 0;
+    white-space: pre-wrap;
+  }
+  .editor code { padding: 1px 6px; }
+  .editor a {
+    color: var(--text-strong);
+    text-decoration: underline;
+  }
+
+  @media (max-width: 480px) {
+    .card { padding: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="site-header">
+    <a class="avatar-btn" href="/" aria-label="View site" title="View site">
+      <img src="https://cdn.discordapp.com/avatars/1398613481028190320/807c8e594160b427cb0394e106fbf6cc.png?size=1024" alt="Avatar">
+    </a>
+    <nav>
+      <a href="/">View site</a>
+      <a href="/logout">Logout</a>
+      <button class="theme-btn" id="themeBtn" type="button" aria-label="Toggle theme"></button>
+    </nav>
+  </header>
+
+  <h2 class="page-title">Admin</h2>
+
+  <div class="tabs">
+    <button id="tabThoughts" type="button" class="active">Thoughts</button>
+    <button id="tabPhotos" type="button">Photos</button>
+  </div>
+
+  <!-- Thoughts panel -->
+  <section id="panelThoughts">
+    <div class="card">
+      <h3>New thought</h3>
+      <div class="field">
+        <label for="tTitle">Title</label>
+        <input type="text" id="tTitle" maxlength="200" placeholder="Something on your mind">
+      </div>
+      <div class="field">
+        <label>Content</label>
+        <div class="toolbar" id="toolbar">
+          <button type="button" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+          <button type="button" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+          <button type="button" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+          <button type="button" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+          <div class="sep"></div>
+          <button type="button" data-block="h3" title="Heading">H</button>
+          <button type="button" data-block="blockquote" title="Quote">&#8221;</button>
+          <button type="button" data-block="pre" title="Code block">&lt;/&gt;</button>
+          <div class="sep"></div>
+          <button type="button" data-cmd="insertUnorderedList" title="Bullet list">&#8226;&#8211;</button>
+          <button type="button" data-cmd="insertOrderedList" title="Numbered list">1.</button>
+          <div class="sep"></div>
+          <button type="button" id="linkBtn" title="Add link">&#128279;</button>
+          <button type="button" data-cmd="removeFormat" title="Clear formatting">&#10005;</button>
+        </div>
+        <div class="editor" id="tContent" contenteditable="true" data-placeholder="Write it out..."></div>
+      </div>
+      <button class="btn" id="publishBtn" type="button">Publish</button>
+      <p class="error-msg" id="tError" hidden></p>
+    </div>
+    <div id="thoughtList"></div>
+  </section>
+
+  <!-- Photos panel -->
+  <section id="panelPhotos" hidden>
+    <div class="card">
+      <h3>Upload photo</h3>
+      <div class="field">
+        <label for="pFile">Image (png, jpg, gif, webp - max 10 MB)</label>
+        <input type="file" id="pFile" accept=".png,.jpg,.jpeg,.gif,.webp">
+      </div>
+      <div class="field">
+        <label for="pCaption">Caption (optional)</label>
+        <input type="text" id="pCaption" maxlength="300" placeholder="Where or what is this?">
+      </div>
+      <button class="btn" id="uploadBtn" type="button">Upload</button>
+      <p class="error-msg" id="pError" hidden></p>
+    </div>
+    <div id="photoList"></div>
+  </section>
+
+</div>
+
+<script>
+  // ---------- Tabs ----------
+  var tabT = document.getElementById('tabThoughts');
+  var tabP = document.getElementById('tabPhotos');
+  var panelT = document.getElementById('panelThoughts');
+  var panelP = document.getElementById('panelPhotos');
+
+  tabT.addEventListener('click', function () {
+    tabT.classList.add('active');
+    tabP.classList.remove('active');
+    panelT.hidden = false;
+    panelP.hidden = true;
+  });
+
+  tabP.addEventListener('click', function () {
+    tabP.classList.add('active');
+    tabT.classList.remove('active');
+    panelP.hidden = false;
+    panelT.hidden = true;
+  });
+
+  // ---------- Helpers ----------
+  function esc(s) {
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function stripTags(html) {
+    var d = document.createElement('div');
+    d.innerHTML = html;
+    return d.textContent || '';
+  }
+
+  // ---------- Rich text toolbar ----------
+  var editor = document.getElementById('tContent');
+
+  document.getElementById('toolbar').addEventListener('click', function (e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    editor.focus();
+    if (btn.dataset.cmd) {
+      document.execCommand(btn.dataset.cmd, false, null);
+    } else if (btn.dataset.block) {
+      var current = document.queryCommandValue('formatBlock').toLowerCase();
+      var next = current === btn.dataset.block ? 'p' : btn.dataset.block;
+      document.execCommand('formatBlock', false, next);
+    }
+  });
+
+  document.getElementById('linkBtn').addEventListener('click', function () {
+    var url = prompt('Link URL (https://...):');
+    if (!url) return;
+    if (!/^(https?:\/\/|mailto:)/i.test(url)) {
+      url = 'https://' + url;
+    }
+    editor.focus();
+    document.execCommand('createLink', false, url);
+  });
+
+  // ---------- Thoughts ----------
+  var thoughtList = document.getElementById('thoughtList');
+  var publishBtn = document.getElementById('publishBtn');
+
+  function loadThoughts() {
+    fetch('/api/thoughts')
+      .then(function (r) { return r.json(); })
+      .then(function (items) {
+        if (!items.length) {
+          thoughtList.innerHTML = '<p class="empty">No thoughts published yet.</p>';
+          return;
+        }
+        var html = '<div class="card"><h3>Published (' + items.length + ')</h3>';
+        items.forEach(function (t) {
+          html += '<div class="item-row">' +
+            '<div class="meta">' +
+            '<h4>' + esc(t.title) + '</h4>' +
+            '<div class="date">' + esc(t.date) + '</div>' +
+            '<p class="preview">' + esc(stripTags(t.content)) + '</p>' +
+            '</div>' +
+            '<button class="btn-danger" type="button" data-del-thought="' + t.id + '">Delete</button>' +
+            '</div>';
+        });
+        thoughtList.innerHTML = html + '</div>';
+      });
+  }
+
+  publishBtn.addEventListener('click', function () {
+    var title = document.getElementById('tTitle').value.trim();
+    var body = editor.innerHTML.trim();
+    var err = document.getElementById('tError');
+    err.hidden = true;
+
+    if (!title || !stripTags(body).trim()) {
+      err.textContent = 'Title and content are both required.';
+      err.hidden = false;
+      return;
+    }
+
+    publishBtn.disabled = true;
+    fetch('/admin/api/thoughts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: title, content: body })
+    })
+      .then(function (r) {
+        return r.json().then(function (j) { return { ok: r.ok, j: j }; });
+      })
+      .then(function (res) {
+        publishBtn.disabled = false;
+        if (!res.ok) {
+          err.textContent = res.j.error || 'Something went wrong.';
+          err.hidden = false;
+          return;
+        }
+        document.getElementById('tTitle').value = '';
+        editor.innerHTML = '';
+        loadThoughts();
+      })
+      .catch(function () {
+        publishBtn.disabled = false;
+        err.textContent = 'Network error.';
+        err.hidden = false;
+      });
+  });
+
+  thoughtList.addEventListener('click', function (e) {
+    var id = e.target.getAttribute('data-del-thought');
+    if (!id) return;
+    if (!confirm('Delete this thought? This cannot be undone.')) return;
+    fetch('/admin/api/thoughts/' + id + '/delete', { method: 'POST' })
+      .then(function () { loadThoughts(); });
+  });
+
+  // ---------- Photos ----------
+  var photoList = document.getElementById('photoList');
+  var uploadBtn = document.getElementById('uploadBtn');
+
+  function loadPhotos() {
+    fetch('/api/photos')
+      .then(function (r) { return r.json(); })
+      .then(function (items) {
+        if (!items.length) {
+          photoList.innerHTML = '<p class="empty">No photos uploaded yet.</p>';
+          return;
+        }
+        var html = '<div class="card"><h3>Uploaded (' + items.length + ')</h3>';
+        items.forEach(function (p) {
+          var captionHtml = p.caption
+            ? esc(p.caption)
+            : '<span class="no-caption">No caption</span>';
+          html += '<div class="item-row">' +
+            '<img class="photo-row-img" src="' + p.url + '" alt="">' +
+            '<div class="meta">' +
+            '<h4>' + captionHtml + '</h4>' +
+            '<div class="date">' + esc(p.date) + '</div>' +
+            '</div>' +
+            '<button class="btn-danger" type="button" data-del-photo="' + p.id + '">Delete</button>' +
+            '</div>';
+        });
+        photoList.innerHTML = html + '</div>';
+      });
+  }
+
+  uploadBtn.addEventListener('click', function () {
+    var fileInput = document.getElementById('pFile');
+    var caption = document.getElementById('pCaption').value.trim();
+    var err = document.getElementById('pError');
+    err.hidden = true;
+
+    if (!fileInput.files.length) {
+      err.textContent = 'Choose an image first.';
+      err.hidden = false;
+      return;
+    }
+
+    var fd = new FormData();
+    fd.append('photo', fileInput.files[0]);
+    fd.append('caption', caption);
+
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = 'Uploading...';
+
+    fetch('/admin/api/photos', { method: 'POST', body: fd })
+      .then(function (r) {
+        return r.json().then(function (j) { return { ok: r.ok, j: j }; });
+      })
+      .then(function (res) {
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = 'Upload';
+        if (!res.ok) {
+          err.textContent = res.j.error || 'Upload failed.';
+          err.hidden = false;
+          return;
+        }
+        fileInput.value = '';
+        document.getElementById('pCaption').value = '';
+        loadPhotos();
+      })
+      .catch(function () {
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = 'Upload';
+        err.textContent = 'Network error.';
+        err.hidden = false;
+      });
+  });
+
+  photoList.addEventListener('click', function (e) {
+    var id = e.target.getAttribute('data-del-photo');
+    if (!id) return;
+    if (!confirm('Delete this photo? This cannot be undone.')) return;
+    fetch('/admin/api/photos/' + id + '/delete', { method: 'POST' })
+      .then(function () { loadPhotos(); });
+  });
+
+  loadThoughts();
+  loadPhotos();
+
+  // ---------- Theme (system -> light -> dark) ----------
+  var icons = {
+    system: '<svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+    light: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>',
+    dark: '<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
+  };
+  var order = ['system', 'light', 'dark'];
+  var theme = 'system';
+  var themeBtn = document.getElementById('themeBtn');
+
+  function applyTheme() {
+    document.documentElement.setAttribute('data-theme', theme);
+    themeBtn.innerHTML = icons[theme];
+    themeBtn.title = 'Theme: ' + theme;
+  }
+
+  themeBtn.addEventListener('click', function () {
+    theme = order[(order.indexOf(theme) + 1) % order.length];
+    applyTheme();
+  });
+
+  applyTheme();
+</script>
+</body>
+</html>
